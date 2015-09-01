@@ -52,7 +52,7 @@ pub struct ENetAddress {
 pub struct ENetEvent {
     pub etype: libc::c_uint,
     pub peer: *mut ENetPeer,
-    pub channelID: libc::c_char,
+    pub channelID: libc::c_uchar,
     pub data: libc::c_uint,
     pub packet: *mut ENetPacket,
 }
@@ -104,7 +104,7 @@ extern {
 
     pub fn enet_packet_create(data: *mut libc::c_void, dataLength: libc::size_t, flags: libc::c_uint) -> *mut ENetPacket;
     pub fn enet_packet_destroy(packet: *mut ENetPacket);
-    pub fn enet_peer_send(peer: *mut ENetPeer, channelID: libc::c_ushort, packet: *mut ENetPacket);
+    pub fn enet_peer_send(peer: *mut ENetPeer, channelID: libc::c_uchar, packet: *mut ENetPacket);
     pub fn enet_host_flush(host: *mut libc::c_void);
     pub fn enet_address_set_host(address: *mut ENetAddress, hostName: *const libc::c_char);
 }

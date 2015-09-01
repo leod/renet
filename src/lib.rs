@@ -78,7 +78,7 @@ pub struct Packet {
  */
 pub enum Event {
     Connect(Peer),
-    Receive(Peer,Packet),
+    Receive(Peer,u8,Packet),
     Disconnect(Peer),
     None,
 }
@@ -187,7 +187,8 @@ impl Host {
                 ffi::ENET_EVENT_TYPE_DISCONNECT =>
                     Ok(Event::Disconnect(peer)),
                 ffi::ENET_EVENT_TYPE_RECEIVE =>
-                    Ok(Event::Receive(peer, Packet { ffi_handle: ffi_event.packet })),
+                    Ok(Event::Receive(peer, ffi_event.channelID,
+                                      Packet { ffi_handle: ffi_event.packet })),
                 _ =>
                     Err("Invalid event".to_string())
             }
@@ -202,7 +203,7 @@ impl Host {
 }
 
 impl Peer {
-    pub fn send(&self, data: &[u8], flags: libc::c_uint, channel_id: u16) {
+    pub fn send(&self, data: &[u8], flags: libc::c_uint, channel_id: u8) {
         let repr = data.repr();
         
         unsafe {
