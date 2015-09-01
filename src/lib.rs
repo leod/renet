@@ -96,7 +96,7 @@ impl Host {
                       peer_count: u32,
                       channel_count: u32,
                       incoming_bandwidth: u32,
-                      outgoing_bandwidth: u32) -> Result<Host, &'static str> {
+                      outgoing_bandwidth: u32) -> Result<Host, String> {
         let address = ffi::ENetAddress {
             host: ffi::ENET_HOST_ANY,
             port: port
@@ -111,7 +111,7 @@ impl Host {
         };
 
         if host_c.is_null() {
-            Err("Could not initialize host")
+            Err("Could not initialize host".to_string())
         } else {
             Ok(Host { ffi_handle: host_c })
         }
@@ -122,7 +122,7 @@ impl Host {
                    port: u16,
                    channel_count: u32,
                    incoming_bandwidth: u32,
-                   outgoing_bandwidth: u32) -> Result<(Host, Peer), &'static str> {
+                   outgoing_bandwidth: u32) -> Result<(Host, Peer), String> {
         let host_c = unsafe {
             ffi::enet_host_create(std::ptr::null(),
                                   1, // 1 outgoing connection
@@ -132,7 +132,7 @@ impl Host {
         };
 
         if host_c.is_null() {
-            return Err("Could not initialize host");
+            return Err("Could not initialize host".to_string());
         }
 
         let host = Host { ffi_handle: host_c };
@@ -149,18 +149,18 @@ impl Host {
         };
 
         if peer_c.is_null() {
-            return Err("Could not initialize peer");
+            return Err("Could not initialize peer".to_string());
         }
 
         match host.service(timeout_ms) {
             Ok(Event::Connect(_)) =>
                 Ok((host, Peer { ffi_handle: peer_c })),
             _ =>
-                Err("Could not connect")
+                Err("Could not connect".to_string())
         }
     }
 
-    pub fn service(&self, timeout_ms: u32) -> Result<Event, &'static str> {
+    pub fn service(&self, timeout_ms: u32) -> Result<Event, String> {
         let mut ffi_event = ffi::ENetEvent {
             etype: 0,
             peer: std::ptr::null_mut(),
@@ -175,7 +175,7 @@ impl Host {
         };
 
         if 0 > result {
-            Err("Could not service the host")
+            Err("Could not service the host".to_string())
         } else if 0 == result {
             Ok(Event::None)
         } else {
@@ -189,7 +189,7 @@ impl Host {
                 ffi::ENET_EVENT_TYPE_RECEIVE =>
                     Ok(Event::Receive(peer, Packet { ffi_handle: ffi_event.packet })),
                 _ =>
-                    Err("Invalid event")
+                    Err("Invalid event".to_string())
             }
         }
     }
@@ -210,6 +210,27 @@ impl Peer {
             let data_len = repr.len as libc::size_t;
             let packet = ffi::enet_packet_create(data_ptr, data_len, flags);
             ffi::enet_peer_send(self.ffi_handle, channel_id, packet);
+        }
+    }
+
+    pub fn set_user_data(&self, data: *mut libc::c_void) {
+        unsafe {
+            (*self.ffi_handle).data = data;
+        }
+    }
+
+    pub fn get_user_data(&self) -> *mut libc::c_void {
+        unsafe {
+            (*self.ffi_handle).data
+        }
+    }
+}
+
+impl Packet {
+    pub fn data(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts((*self.ffi_handle).data as *const u8,
+                (*self.ffi_handle).dataLength as usize)
         }
     }
 }
