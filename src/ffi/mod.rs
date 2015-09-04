@@ -89,7 +89,7 @@ pub struct ENetPeer {
 }
 
 #[link(name = "enet")]
-#[link(name = "winmm")]
+#[cfg_attr(target_os = "windows", link(name = "winmm"))]
 extern {
     pub fn enet_initialize() -> libc::c_int;
     pub fn enet_deinitialize();
