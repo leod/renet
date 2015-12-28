@@ -26,12 +26,9 @@
  * -------------------------------------------------------------------
  */
 
-#![feature(libc)]
-#![feature(raw)]
 extern crate libc;
 
 use libc::{c_uint,c_void,size_t,c_int};
-use std::raw::Repr;
 
 #[allow(non_snake_case)]
 pub mod ffi;
@@ -186,9 +183,14 @@ impl Host {
                     Ok(Event::Connect(peer)),
                 ffi::ENET_EVENT_TYPE_DISCONNECT =>
                     Ok(Event::Disconnect(peer)),
-                ffi::ENET_EVENT_TYPE_RECEIVE =>
+                ffi::ENET_EVENT_TYPE_RECEIVE => {
+                    /*unsafe {
+                        println!("receive {:?}", std::slice::from_raw_parts((*ffi_event.packet).data as *const u8,
+                                                                            (*ffi_event.packet).dataLength as usize));
+                    }*/
                     Ok(Event::Receive(peer, ffi_event.channelID,
-                                      Packet { ffi_handle: ffi_event.packet })),
+                                      Packet { ffi_handle: ffi_event.packet }))
+                }
                 _ =>
                     Err("Invalid event".to_string())
             }
@@ -204,11 +206,9 @@ impl Host {
 
 impl Peer {
     pub fn send(&self, data: &[u8], flags: libc::c_uint, channel_id: u8) {
-        let repr = data.repr();
-        
         unsafe {
-            let data_ptr = repr.data as *mut libc::c_void;
-            let data_len = repr.len as libc::size_t;
+            let data_ptr = data.as_ptr() as *mut libc::c_void; //repr.data as *mut libc::c_void;
+            let data_len = data.len();//repr.len as libc::size_t;
             let packet = ffi::enet_packet_create(data_ptr, data_len, flags);
             ffi::enet_peer_send(self.ffi_handle, channel_id, packet);
         }
